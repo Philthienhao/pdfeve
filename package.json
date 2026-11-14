@@ -1,0 +1,131 @@
+{
+  "name": "pdfeve",
+  "version": "1.0.0",
+  "description": "Nền tảng Xử lý & Biên tập PDF Đa năng 118-in-1 (Offline 100% Cục bộ)",
+  "main": "main.js",
+  "author": "PDFeve Studio",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder -mw",
+    "publish:mac": "electron-builder --mac -p always",
+    "publish:win": "electron-builder --win -p always",
+    "publish:all": "electron-builder -mw -p always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.pdfeve.app",
+    "productName": "PDFeve",
+    "copyright": "Bản quyền © 2026 PDFeve Studio. Bảo lưu mọi quyền.",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "icon": "assets/icon.png",
+    "files": [
+      "**/*",
+      "!Stirling-PDF/**",
+      "!dist/**",
+      "!*.mjs",
+      "!test_*.docx",
+      "!semantic_audit_report.json",
+      "!test_results.json"
+    ],
+    "extraResources": [
+      "pdf_to_docx_engine.py",
+      "app-update.yml"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Philthienhao",
+        "repo": "pdfeve"
+      }
+    ],
+    "mac": {
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "darkModeSupport": true,
+      "minimumSystemVersion": "10.15.0"
+    },
+    "dmg": {
+      "title": "Cài đặt PDFeve cho MacBook",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PDFeve"
+    },
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "Tài liệu PDF",
+        "role": "Editor"
+      }
+    ]
+  }
+}

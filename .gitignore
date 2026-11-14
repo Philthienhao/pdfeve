@@ -1,0 +1,47 @@
+# Node modules & build artifacts
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# Third-party / external
+Stirling-PDF/
+
+# Temporary test images & documents
+tmp_img/
+test_extracted_images/
+test_perfect_ql/
+test_*.png
+test_*.docx
+preview_*.png
+verify_*.png
+img328_*.png
+img_*.png
+raw328_*.png
+chk_*.png
+check_*.png
+clean_*.png
+mask_*.png
+orig_*.png
+user_*.png
+poster_png_*.png
+im1_*.png
+pure_clean_*.png
+test_input_converted.docx
+api_test_word.docx
+SkyLine_*.docx
+Cong_Van_SkyLine_Hoan_Hao.docx
+Thong_Bao_*.docx
+Poster_PDFeve.docx
+user_test_hue*
+test_input.pdf
+IMG_2549.JPG
+*.JPG
+*.jpg
+pdf_original_rendered.png
+*PDFix*
+semantic_audit_report.json
+test_results.json
+*.dmg
+*.exe
+*.zip

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDFeve — Nền tảng Xử lý & Biên tập PDF Đa năng</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  
+  <!-- Phông chữ Google Fonts hiện đại: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+  <!-- Thư viện pdf-lib xử lý PDF cục bộ không cần mạng (Offline 100%) -->
+  <script src="pdf-lib.min.js"></script>
+  <!-- Thư viện JSZip để đóng gói tệp Word .docx thực tế -->
+  <script src="jszip.min.js"></script>
+  <!-- Thư viện Mozilla PDF.js nạp ngầm không chặn luồng render giao diện -->
+  <script type="module">
+    import('./pdf.min.js').then(mod => {
+      const pdfjs = mod.default || mod;
+      window.pdfjsLib = pdfjs;
+      if (pdfjs && pdfjs.GlobalWorkerOptions) {
+        pdfjs.GlobalWorkerOptions.workerSrc = './pdf.worker.min.js';
+      }
+    }).catch(() => {});
+  </script>
+</head>
+<body>
+
+  <!-- BACKGROUND AMBIENT GLOW -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- BANNER CẢNH BÁO TRÌNH DUYỆT TRONG APP (Zalo, Facebook, Messenger) -->
+  <aside id="in-app-browser-banner" aria-label="Cảnh báo trình duyệt" style="display: none; position: sticky; top: 0; z-index: 9999; background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; padding: 10px 16px; font-size: 13px; font-weight: 600; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <div style="display: flex; align-items: center; justify-content: space-between; max-width: 900px; margin: 0 auto; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; text-align: left; line-height: 1.4;">
+        <span style="font-size: 16px;">⚠️</span>
+        <span>Bạn đang mở trong <strong>Zalo/App</strong>. Bấm nút <strong>(•••)</strong> ở góc trên bên phải ➔ chọn <strong>"Mở bằng trình duyệt"</strong> (Safari) để tải file PDF không bị chặn!</span>
+      </div>
+      <button id="btn-close-inapp-banner" style="background: rgba(0,0,0,0.25); border: none; color: #fff; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 13px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">✕</button>
+    </div>
+  </aside>
+
+  <!-- 1. FLOATING MODERN GLASS NAVBAR -->
+  <header class="navbar-wrapper">
+    <div class="navbar-container">
+      
+      <!-- Logo & Brand Identity -->
+      <div class="brand-group">
+        <div class="brand-logo-badge" style="background: transparent; border: none; padding: 0; width: 38px; height: 38px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);">
+          <img src="logo.png" alt="PDFeve Logo" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+        </div>
+        <div class="brand-text-wrap">
+          <div class="brand-title">
+            <span class="brand-name">PDF<span class="gradient-text">eve</span></span>
+          </div>
+          <span class="brand-tagline">Client-side PDF Engine</span>
+        </div>
+      </div>
+
+      <!-- Live Search Box with Keycap & Instant Suggestions -->
+      <div class="nav-search-wrap" id="nav-search-wrap">
+        <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="search-input" class="nav-search-input" placeholder="Tìm kiếm nhanh trong 118 công cụ PDF..." autocomplete="off" spellcheck="false">
+        <kbd class="search-keycap">⌘K</kbd>
+        <div class="search-suggestions-dropdown" id="search-suggestions-dropdown" style="display: none;"></div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="nav-actions">
+        <button class="nav-mobile-btn" id="btn-check-update" title="Kiểm tra bản cập nhật mới từ máy chủ" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; border-radius: var(--radius-full); font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span id="nav-update-text">Cập nhật 🚀</span>
+        </button>
+
+        <button class="nav-mobile-btn" id="btn-open-mobile-modal" title="Quét mã QR để mở trên điện thoại" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--brand-primary); border-radius: var(--radius-full); font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          <span>Dùng trên ĐT 📱</span>
+        </button>
+
+        <button class="nav-btn-icon" id="theme-toggle-btn" title="Chuyển chế độ Sáng / Tối">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+
+        <button class="nav-upload-cta" id="nav-quick-upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span>Nạp tệp nhanh</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- 2. MAIN APPLICATION WORKSPACE -->
+  <main class="app-workspace">
+    
+    <!-- HERO INTRO BANNER -->
+    <section class="hero-section">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>Xử lý 100% Cục bộ • Bảo mật Tuyệt đối • Miễn phí Trọn đời</span>
+      </div>
+      <h1 class="hero-heading">
+        Hệ điều hành cho mọi tệp <span class="gradient-text">tài liệu PDF</span> của bạn
+      </h1>
+      <p class="hero-subheading">
+        Tích hợp đầy đủ <strong>118 công cụ</strong> từ sắp xếp, chuyển đổi Office/Ảnh, đóng dấu bản quyền đến chữ ký điện tử. Xử lý trực tiếp trên trình duyệt, không gửi file lên bất kỳ máy chủ nào.
+      </p>
+
+      <!-- Quick Feature Highlights -->
+      <div class="hero-highlights">
+        <div class="highlight-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Riêng tư 100% (Zero Server Upload)</span>
+        </div>
+        <div class="highlight-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span>Khởi động & Xử lý tức thì</span>
+        </div>
+        <div class="highlight-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          <span>Không giới hạn số lượt dùng</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. BỘ LỌC DANH MỤC DẠNG SEGMENTED CAPSULES -->
+    <div class="categories-bar-wrapper">
+      <div class="categories-bar" id="filter-tabs-container">
+        <!-- Render tự động qua app.js -->
+      </div>
+    </div>
+
+    <!-- 4. LƯỚI DANH MỤC CÔNG CỤ (BENTO GRID CARDS) -->
+    <div class="tools-directory" id="sections-container">
+      <!-- Render tự động 118 công cụ -->
+    </div>
+
+  </main>
+
+  <!-- 5. FOOTER THƯƠNG HIỆU HIỆN ĐẠI -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="footer-logo">
+          <strong>PDFeve Studio</strong>
+          <span class="footer-dot">•</span>
+          <span>Bản quyền © 2026</span>
+        </div>
+        <p class="footer-desc">Nền tảng xử lý tài liệu số thế hệ mới chạy trên công nghệ WebAssembly & Web Workers.</p>
+      </div>
+      <div class="footer-right">
+        <span class="footer-tag">🔒 An toàn theo chuẩn ISO/IEC 27001</span>
+        <span class="footer-tag">⚡ Powered by pdf-lib Core</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 6. MODAL WORKSPACE HIỆN ĐẠI (PRO TOOL STUDIO) -->
+  <div class="modal-overlay" id="tool-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge" id="modal-tool-icon">
+            <!-- Icon SVG -->
+          </div>
+          <div>
+            <div class="modal-header-tag" id="modal-tool-category">SẮP XẾP & QUẢN LÝ</div>
+            <h2 class="modal-title" id="modal-tool-name">Gộp PDF</h2>
+            <p class="modal-desc" id="modal-tool-desc">Mô tả công cụ</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="modal-close-btn" title="Đóng cửa sổ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" id="modal-body-content">
+        <!-- Nội dung điều khiển sẽ được render động theo từng công cụ -->
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modal-cancel-btn">Hủy bỏ</button>
+        <button class="btn-primary" id="modal-execute-btn">
+          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span id="modal-btn-text">Thực thi & Tải về</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HƯỚNG DẪN & MÃ QR MỞ TRÊN ĐIỆN THOẠI -->
+  <div class="modal-overlay" id="mobile-qr-modal" style="display: none; z-index: 1500;">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </div>
+          <div>
+            <h3 class="modal-title">Mở PDFeve trên Điện thoại</h3>
+            <p class="modal-desc">Sử dụng trực tiếp qua mạng Wi-Fi không cần cài đặt</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-mobile-modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 24px; text-align: center; gap: 16px;">
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+          Kết nối điện thoại vào <strong>cùng mạng Wi-Fi</strong> với máy tính này, sau đó mở Camera điện thoại và quét mã QR bên dưới:
+        </p>
+
+        <!-- QR Code Container -->
+        <div style="display: flex; justify-content: center; margin: 4px 0;">
+          <div style="background: #ffffff; padding: 14px; border-radius: 16px; border: 2px solid rgba(99, 102, 241, 0.25); box-shadow: 0 10px 25px rgba(0,0,0,0.08); display: inline-block;">
+            <img id="mobile-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&amp;margin=10&amp;data=http%3A%2F%2F192.168.1.210%3A4567" alt="Mã QR mở trên điện thoại" style="width: 190px; height: 190px; display: block; border-radius: 8px;">
+          </div>
+        </div>
+
+        <!-- IP Address Box -->
+        <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="text-align: left; overflow: hidden;">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Địa chỉ truy cập trực tiếp</div>
+            <div id="mobile-lan-url" style="font-family: var(--font-mono); font-size: 14.5px; font-weight: 700; color: var(--brand-primary); word-break: break-all;">http://70.0.3.38:8888</div>
+          </div>
+          <button id="btn-copy-mobile-url" class="btn-secondary" style="padding: 6px 14px; font-size: 12.5px; white-space: nowrap;">
+            <span>Sao chép</span>
+          </button>
+        </div>
+
+        <!-- Mẹo PWA -->
+        <div style="text-align: left; font-size: 12.5px; color: var(--text-muted); background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px; line-height: 1.5;">
+          💡 <strong>Mẹo dùng như App chuyên nghiệp:</strong> Trên iPhone (Safari), nhấn nút <strong>Chia sẻ (Share)</strong> ➔ chọn <strong>"Thêm vào Màn hình chính" (Add to Home Screen)</strong> để tạo icon ứng dụng mở toàn màn hình!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KẾT QUẢ TẢI VỀ / LƯU FILE TRÊN DI ĐỘNG -->
+  <div class="modal-overlay" id="download-result-modal" style="display: none; z-index: 99999;">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="color: #10b981;">Đã đóng gói PDF thành công!</h3>
+            <p class="modal-desc" id="download-result-desc">Tài liệu đã sẵn sàng để lưu về điện thoại</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-download-result">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px; gap: 14px; text-align: center;">
+        <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px; text-align: left;">
+          <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Tệp PDF đã tạo:</div>
+          <div id="download-result-filename" style="font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 2px; word-break: break-all;">Tai_Lieu_Camera_PDFeve.pdf</div>
+          <div id="download-result-meta" style="font-size: 12.5px; color: var(--brand-primary); margin-top: 4px; font-weight: 600;">Kích thước: Đang tính...</div>
+        </div>
+
+        <!-- Các nút lưu / xem file -->
+        <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+          <!-- Nút 1: Tải về máy trực tiếp -->
+          <a id="btn-modal-download-file" href="#" class="btn-primary" style="padding: 14px; font-size: 15px; font-weight: 700; border-radius: 12px; background: linear-gradient(135deg, #10b981, #059669); color: #ffffff !important; text-decoration: none; border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>⬇️ Bấm để tải file về máy</span>
+          </a>
+
+          <!-- Nút 2: Mở xem trực tiếp trên Safari -->
+          <a id="btn-modal-view-pdf" href="#" target="_blank" class="btn-secondary" style="padding: 12px; font-size: 14px; font-weight: 600; border-radius: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-primary);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span>👁️ Mở xem trực tiếp PDF</span>
+          </a>
+
+          <!-- Nút 3: Chia sẻ / Lưu vào Tệp (Native iOS Share) -->
+          <button class="btn-secondary" id="btn-modal-share-file" style="padding: 12px; font-size: 14px; font-weight: 600; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; border-color: rgba(99, 102, 241, 0.4); color: var(--brand-primary); cursor: pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <span>📤 Lưu vào Tệp / Chia sẻ (AirDrop, Zalo)</span>
+          </button>
+        </div>
+
+        <!-- Hướng dẫn khi đang ở trong Zalo -->
+        <div id="zalo-guide-tip" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 12px; text-align: left; font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+          💡 <strong>Mẹo trên iPhone:</strong> Khi bấm <strong>"Bấm để tải file về máy"</strong>, Safari sẽ hỏi <em>"Bạn có muốn tải về không?"</em> ➔ Bấm <strong>Tải về</strong> để lưu thẳng vào ứng dụng <strong>Tệp (Files)</strong> của iPhone!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TỰ ĐỘNG CẬP NHẬT PHIÊN BẢN (AUTO-UPDATE) -->
+  <div class="modal-overlay" id="update-modal" style="display: none; z-index: 100000;">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="color: var(--text-primary);">Cập nhật phiên bản PDFeve</h3>
+            <p class="modal-desc" id="update-modal-subtitle">Đang kiểm tra kết nối máy chủ...</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btn-close-update-modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px; gap: 16px;">
+        <!-- So sánh phiên bản -->
+        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px 16px;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Bản hiện tại:</div>
+            <div id="update-current-ver" style="font-size: 14px; font-weight: 800; color: var(--text-secondary); margin-top: 2px;">v1.0.0</div>
+          </div>
+          <div style="color: var(--brand-primary); font-size: 18px; font-weight: 800;">➔</div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Bản mới nhất:</div>
+            <div id="update-target-ver" style="font-size: 14px; font-weight: 800; color: #10b981; margin-top: 2px;">v1.0.1</div>
+          </div>
+        </div>
+
+        <!-- Nội dung bản vá / Changelog -->
+        <div id="update-changelog-wrap" style="display: none; background: rgba(99, 102, 241, 0.04); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); max-height: 150px; overflow-y: auto;">
+          <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">✨ Tính năng & Sửa lỗi mới:</div>
+          <div id="update-changelog-content"></div>
+        </div>
+
+        <!-- Thanh tiến trình tải ngầm -->
+        <div id="update-progress-wrap" style="display: none;">
+          <div style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
+            <span id="update-progress-label">Đang tải bản cập nhật ngầm...</span>
+            <span id="update-progress-percent">0%</span>
+          </div>
+          <div style="height: 8px; background: var(--bg-surface); border-radius: 4px; overflow: hidden; border: 1px solid var(--border-subtle); margin-top: 6px;">
+            <div id="update-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #6366f1, #10b981); transition: width 0.2s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Nút hành động -->
+        <div style="display: flex; gap: 10px; width: 100%; margin-top: 4px;">
+          <button class="btn-secondary" id="btn-cancel-update" style="flex: 1; padding: 12px; font-weight: 600; border-radius: 10px;">Để sau</button>
+          <button class="btn-primary" id="btn-action-update" style="flex: 2; padding: 12px; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>🚀 Tải bản cập nhật</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="app-toast"></div>
+
+  <!-- Input file ẩn cho các thao tác chọn tệp -->
+  <input type="file" id="global-file-input" style="display: none;" multiple>
+
+  <!-- Offline QR Code Generator -->
+  <script src="qrcode.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
